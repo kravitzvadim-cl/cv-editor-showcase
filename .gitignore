@@ -1,0 +1,30 @@
+# A CV is personal data. Never commit one.
+*.pdf
+*.cv.json
+/private/
+/cv/
+.env
+.DS_Store
+node_modules/
+# API key for Translate, written by tools/make-local-config.mjs
+local-config.js
+
+# Public showcase exclusions
+.env
+.env.*
+!.env.example
+!.env.local.example
+node_modules/
+.next/
+dist/
+.data/
+.runtime/
+*.db
+*.sqlite*
+*.pem
+*.key
+credentials*.json
+token*.json
+local-config.js
+.DS_Store
+__pycache__/

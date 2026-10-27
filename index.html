@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Privacy: this page can load only its own files and can open no connection except one: openrouter.ai, used only by
+     the Translate button (translate.js), only when the editor runs from a local file, and only with your own key. The hosted
+     site additionally sends connect-src 'none' (netlify/edge-functions/login.js), so there it can reach nothing at all.
+     Everything else is processed in the browser. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; connect-src https://openrouter.ai; media-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'self' blob:; form-action 'none'; base-uri 'none'">
+<title>CV Editor</title>
+<link rel="stylesheet" href="fonts/doc/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="topbar">
+  <div class="docname"><input id="docName" value="My CV" spellcheck="false" aria-label="Document name" title="Document name – also the file name when you save or export"></div>
+
+  <div class="tgroup" role="group" aria-label="File">
+    <button id="btnNew" class="tb" title="Start a new document from a template or a blank page"><i data-icon="new"></i><span>New</span></button>
+    <button id="btnOpen" class="tb" title="Open PDFs or saved .cv.json files, each in its own tab – you can also drop them on the page"><i data-icon="open"></i><span>Open…</span></button>
+    <button id="btnSave" class="tb" title="Save as .cv.json (Ctrl+S)"><i data-icon="save"></i><span>Save</span></button>
+  </div>
+
+  <div class="tgroup" role="group" aria-label="Edit">
+    <button id="btnUndo" class="tb icon" title="Undo (Ctrl+Z)" aria-label="Undo"><i data-icon="undo"></i></button>
+    <button id="btnRedo" class="tb icon" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><i data-icon="redo"></i></button>
+  </div>
+
+  <div class="tgroup" role="group" aria-label="View">
+    <select id="paper" class="tb" title="Paper size" aria-label="Paper size"><option value="A4">A4</option><option value="Letter">Letter</option></select>
+    <button id="zoomOut" class="tb icon" title="Zoom out" aria-label="Zoom out"><i data-icon="zoomout"></i></button>
+    <span id="zoomLabel" class="num">100%</span>
+    <button id="zoomIn" class="tb icon" title="Zoom in" aria-label="Zoom in"><i data-icon="zoomin"></i></button>
+    <label class="tb toggle" title="Snap to margins, centre and other items (hold Alt to move freely)"><input type="checkbox" id="snapToggle" checked><i data-icon="snap"></i><span>Snap</span></label>
+    <button id="btnRulers" class="tb" aria-pressed="false" title="Rulers and guides (Shift+R) – drag from a ruler onto the page to add a guide"><i data-icon="ruler"></i><span>Rulers</span></button>
+    <button id="viewOriginal" class="tb" disabled aria-pressed="false" title="Show the imported PDF faintly behind your edits (never printed)"><i data-icon="original"></i><span>Original</span></button>
+    <input id="origOpacity" type="range" min="10" max="90" value="35" hidden aria-label="Original overlay strength" title="Overlay strength">
+  </div>
+
+  <span class="grow"></span>
+
+  <div class="tgroup checking" role="group" aria-label="Check">
+    <span id="status" role="status" hidden></span>
+    <button id="warn" class="tb warnchip" hidden title="Select the items that would be cut off"></button>
+    <button id="btnTranslate" class="tb" title="Translate this CV between Hebrew and English into a new tab"><i data-icon="translate"></i><span>Translate</span></button>
+    <button id="btnAts" class="tb" title="See the text an applicant tracking system reads from your CV"><i data-icon="ats"></i><span>ATS check</span></button>
+  </div>
+  <button id="btnExport" class="tb primary" title="Save as PDF through the print dialog"><i data-icon="export"></i><span>Export PDF</span></button>
+  <input type="file" id="fileOpen" accept=".json,application/json,.pdf,application/pdf" multiple hidden>
+  <input type="file" id="fileImage" accept="image/*" hidden>
+</header>
+
+<nav id="docTabs" aria-label="Open documents"><div id="tabList" role="tablist"></div><button id="tabNew" class="tabadd" title="New document in a new tab – a template or a blank page" aria-label="New document"><i data-icon="new"></i></button><button id="tabOpen" class="tabadd" title="Open one or more PDFs, each in its own tab" aria-label="Open PDFs"><i data-icon="open"></i></button></nav>
+
+<aside id="left" aria-label="Add and layers">
+  <nav id="ltabs"><button data-ltab="add" class="active">Add</button><button data-ltab="layers">Layers</button></nav>
+  <div id="addPanel">
+  <button id="btnTemplates" class="add feature" title="Start from a designed CV template"><i data-icon="templates"></i><span>Templates…</span></button>
+  <h3>Text</h3>
+  <button data-add="h1" class="add"><span class="tag">H1</span><span class="s-h1">Heading 1</span></button>
+  <button data-add="h2" class="add"><span class="tag">H2</span><span class="s-h2">Heading 2</span></button>
+  <button data-add="h3" class="add"><span class="tag">H3</span><span class="s-h3">Heading 3</span></button>
+  <button data-add="h4" class="add"><span class="tag">H4</span><span class="s-h4">Heading 4</span></button>
+  <button data-add="body" class="add"><span class="tag">¶</span><span>Body text</span></button>
+  <button data-add="small" class="add"><span class="tag">S</span><span class="s-small">Small text</span></button>
+  <h3>Blocks</h3>
+  <button data-add="list" class="add"><i data-icon="list"></i><span>Bullet list</span></button>
+  <button data-add="titledate" class="add" title="Title on the left, dates on the right (Tab between them)"><i data-icon="date"></i><span>Title ⇥ Date</span></button>
+  <button data-add="contact" class="add" title="Email, phone, LinkedIn and GitHub with icons"><i data-icon="contact"></i><span>Contact line</span></button>
+  <button data-add="chip" class="add" title="A short label in a rounded box – for skills and tools"><i data-icon="tag"></i><span>Tag / chip</span></button>
+  <h3>Shapes</h3>
+  <button data-add="line" class="add"><i data-icon="line"></i><span>Line</span></button>
+  <button data-add="vline" class="add"><i data-icon="vline"></i><span>Vertical line</span></button>
+  <button data-add="rect" class="add"><i data-icon="box"></i><span>Box</span></button>
+  <button data-add="ellipse" class="add"><i data-icon="ellipse"></i><span>Circle</span></button>
+  <button data-add="image" class="add"><i data-icon="image"></i><span>Image</span></button>
+  <h3>Pages</h3>
+  <button id="addPage" class="add"><i data-icon="addpage"></i><span>Add page</span></button>
+  <button id="delPage" class="add"><i data-icon="delpage"></i><span>Delete last page</span></button>
+  <h3>Privacy</h3>
+  <p class="hint priv">Your CV stays in this browser. Nothing is uploaded; there is no server copy. The only exception is Translate, which sends the text to OpenRouter when you press it (local file only).</p>
+  <label class="add" title="Autosave keeps your work in this browser only. Switch off on a shared computer: nothing is kept, so save a file to keep your work"><input type="checkbox" id="keepCopy" checked><span>Keep a copy in this browser</span></label>
+  <button id="clearSaved" class="add" title="Remove the CV that autosave keeps in this browser (files you saved are not touched)"><i data-icon="delpage"></i><span>Clear saved CV</span></button>
+  <p class="hint">Click to add, or drag onto the page to place it. Double-click text to edit. Drag on an empty part of the page to select several. Arrow keys nudge 1 px (Shift: 10). Ctrl+G groups.</p>
+  </div>
+  <div id="layersPanel" hidden></div>
+</aside>
+
+<div id="stageWrap">
+  <button id="rulerCorner" title="Ruler units – click to switch between mm, px and pt">mm</button>
+  <canvas id="rulerTop" class="ruler h" title="Drag down onto the page to add a horizontal guide"></canvas>
+  <canvas id="rulerLeft" class="ruler v" title="Drag right onto the page to add a vertical guide"></canvas>
+  <main id="stage">
+    <div id="pages"></div>
+    <div id="dropOverlay" hidden><div class="sheet"><i data-icon="open"></i><b>Drop to open</b><span>PDF or .cv.json</span><span>Images are placed on the page</span></div></div>
+  </main>
+</div>
+
+<aside id="right" aria-label="Properties">
+  <nav id="tabs"><button data-tab="sel" class="active">Selection</button><button data-tab="styles">Text styles</button></nav>
+  <div id="panelSel"></div>
+  <div id="panelStyles" hidden></div>
+</aside>
+
+<dialog id="tplDialog" class="dlg wide" aria-labelledby="tplTitle">
+  <div class="dlg-head"><div><p class="eyebrow">New tab</p><h2 id="tplTitle">New document</h2></div><div class="dlg-actions"><button id="tplOpen" class="btn primary" title="Open one or more PDFs or saved .cv.json files, each in its own tab">Open a PDF…</button><button id="tplClose" class="btn">Close</button></div></div>
+  <p class="hint tpl-hint">Open a PDF to edit it, or start from a template. Every template uses real, selectable text in a clear order, so applicant tracking systems read it correctly. Your other tabs stay open.</p>
+  <div id="tplGrid"></div>
+</dialog>
+
+<dialog id="trDialog" class="dlg" aria-labelledby="trTitle">
+  <div class="dlg-head"><div><p class="eyebrow">New tab</p><h2 id="trTitle">Translate this CV</h2></div><button id="trClose" class="btn">Close</button></div>
+  <p id="trNote" class="tr-note"></p>
+  <label class="tr-row">OpenRouter key<input id="trKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-or-v1-…"></label>
+  <label class="tr-check"><input type="checkbox" id="trRemember"><span>Remember the key on this computer <span class="hint inline">(saved in this browser once it works, so you paste it only once)</span></span></label>
+  <label class="tr-row">Model<input id="trModel" list="trModels" spellcheck="false" placeholder="anthropic/claude-haiku-5.5"></label>
+  <datalist id="trModels"><option value="anthropic/claude-haiku-5.5"></option><option value="anthropic/claude-sonnet-5.5"></option><option value="anthropic/claude-opus-5.5"></option><option value="openai/gpt-4o"></option><option value="google/gemini-2.5-flash"></option></datalist>
+  <label class="tr-check"><input type="checkbox" id="trMirror" checked><span>Mirror the whole layout for Hebrew (and back for English)</span></label>
+  <p id="trSize" class="hint"></p>
+  <div class="tr-go"><button id="trToEn" class="btn">Translate to English</button><button id="trToHe" class="btn">Translate to Hebrew</button></div>
+  <div id="trProgress" hidden><progress id="trBar" max="1" value="0"></progress><div id="trStatus"></div><button id="trCancel" class="btn">Cancel</button></div>
+  <div id="trReview"></div>
+  <button id="trForget" class="btn" hidden>Forget the saved key</button>
+</dialog>
+
+<dialog id="atsDialog" class="dlg">
+  <div class="dlg-head"><h2>What an ATS sees</h2><button id="atsClose" class="btn">Close</button></div>
+  <div id="atsChecks"></div>
+  <p class="hint">The plain text below is extracted in the same order as your PDF. If it reads well here, applicant tracking systems can read it too.</p>
+  <textarea id="atsText" readonly aria-label="Extracted text"></textarea>
+  <div class="dlg-foot"><button id="atsCopy" class="btn">Copy text</button></div>
+</dialog>
+
+<dialog id="reportDialog" class="dlg">
+  <div class="dlg-head"><div><p class="eyebrow">PDF opened</p><h2 id="reportTitle"></h2></div></div>
+  <div id="reportChips" class="chips"></div>
+  <div id="reportNotes"></div>
+  <div class="dlg-foot"><button id="reportCompare" class="btn">Compare with original</button><button id="reportDone" class="btn primary">Start editing</button></div>
+</dialog>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script src="pdfimport.js"></script>
+<script src="layers.js"></script>
+<script src="rulers.js"></script>
+<script src="templates.js"></script>
+<script src="translate.js"></script>
+</body>
+</html>
